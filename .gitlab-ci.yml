@@ -1,0 +1,40 @@
+stages:
+  - test
+  - publish
+
+test-chrome:
+  stage: test
+  image: registry.gitlab.com/ipd4/stack/docker/selenium:master
+  script:
+    - mvn clean
+    - mvn test || echo ""
+    - zip allure-report.zip allure-results
+  artifacts:
+    paths:
+      - allure-report.zip
+    expire_in: 10 min
+
+allure-report:
+  stage: publish
+  variables:
+    AWS_ACCESS_KEY_ID: ${AWS_S3_ACCESS_KEY_ID}
+    AWS_SECRET_ACCESS_KEY: ${AWS_S3_SECRET_ACCESS_KEY}
+  image:
+    name: registry.gitlab.com/ipd4/stack/docker/selenium:master
+    entrypoint: [""]
+  script:
+    |
+      unzip allure-report.zip
+      allure generate allure-results --clean -o html
+      if ! aws s3api head-bucket --bucket $AWS_S3_BUCKET_NAME ;then
+        aws s3api create-bucket --bucket $AWS_S3_BUCKET_NAME --create-bucket-configuration LocationConstraint=eu-west-1
+      fi
+      REPORT_TIMESTAMP=`date +"%H-%M_%d-%m-%y"`
+      aws s3 cp html/ s3://$AWS_S3_BUCKET_NAME/$REPORT_TIMESTAMP/ --recursive --acl public-read
+#      aws s3 website s3://$AWS_S3_BUCKET_NAME --index-document index.html
+
+#      if aws s3api head-bucket --bucket tests-qa ;then
+#        aws s3api create-bucket --bucket tests-qa --create-bucket-configuration LocationConstraint=eu-west-1
+#      fi
+#      aws s3 cp html/ s3://tests-qa --recursive --acl public-read
+#      aws s3 website s3://tests-qa --index-document index.html

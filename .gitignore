@@ -1,0 +1,21 @@
+# Eclipse
+.project
+.settings/**
+.buildpath
+
+# PHPStorm
+.idea/**
+
+# NetBeans
+/nbproject/
+    
+# VisualStudio Code
+/.vscode
+
+/target
+
+/test-output
+
+/allure-results
+
+/html
